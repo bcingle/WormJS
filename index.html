@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Worm JS</title>
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/jquery-3.3.1.js"></script>
+        <script src="js/worm.js"></script>
+    </head>
+    <body>
+        <canvas id="worm-canvas" width="200" height="150"></canvas>
+        <div id="debug-pane" class="debug-only">
+            <div>Apple: <span id="apple-pos"></span></div>
+            <div>Worm: <span id="worm-pos"></span></div>
+            <div>Score: <span id="score"></span></div>
+            <div>FPS: <span id="fps"></span></div>
+            <div>Actual FPS: <span id="actual-fps"></span></div>
+        </div>
+
+        <script>
+            (function($, WormJS, canvas) {
+                Logger.GlobalLogger.level = Logger.LogLevel.DEBUG;
+                let game = new WormJS(canvas, 5, 10);
+                let timer = new FPSTimer();
+                game.addFrameListener(function () {
+                    timer.frame();
+                    $('#apple-pos').text('(' + game.apple.x + ',' + game.apple.y + ')');
+                    $('#worm-pos').text('(' + game.worm.x + ',' + game.worm.y + ')');
+                    $('#score').text(game.score);
+                    $('#fps').text(game.fps);
+                    $('#actual-fps').text(timer.currentFps);
+                });
+                game.start();
+                timer.start();
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'd') {
+                        $('#debug-pane').toggleClass('debug-only');
+                    } 
+                    game.keyDown(event.key);
+                });
+            })($, WormJS, $('#worm-canvas')[0]);
+        </script>
+    </body>
+</html>
