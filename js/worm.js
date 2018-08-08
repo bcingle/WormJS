@@ -177,7 +177,7 @@ class HUDSprite extends Sprite {
     paint(canvas) {
         var ctx = canvas.getContext('2d');
         
-        const fontSize = 12;
+        const fontSize = 8;
         const lineHeight = fontSize * 1.2;
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
@@ -188,6 +188,56 @@ class HUDSprite extends Sprite {
         ctx.fillText(`Apple: (${this.game.apple.x},${this.game.apple.y})`, this.x, y);
         y += lineHeight;
         ctx.fillText(`Worm: (${this.game.worm.x},${this.game.worm.y})`, this.x, y);
+    }
+}
+
+class SettingsSprite extends Sprite {
+    constructor(game, x, y, width, height, bgColor = '#cccccc', fgColor = '#333333') {
+        super(x, y, width, height, '#cccccc', 1);
+        this.fgColor = fgColor;
+        this.game = game;
+    }
+    paintBackground(canvas) {
+        super.paint(canvas);
+    }
+    paintSoundIcon(canvas, x, y) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = this.fgColor;
+        ctx.strokeStyle = this.fgColor;
+        // draw the speaker part
+        ctx.beginPath();
+        ctx.moveTo(x, y + 4);
+        ctx.lineTo(x + 4, y + 4);
+        ctx.lineTo(x + 8, y);
+        ctx.lineTo(x + 8, y + 12);
+        ctx.lineTo(x + 4, y + 8);
+        ctx.lineTo(x, y + 8);
+        ctx.closePath();
+        ctx.fill();
+        if (!this.game.mute) {
+            // draw the sound waves
+            ctx.beginPath();
+            ctx.arc(x + 8, y + 6, 2, (2 * Math.PI) - 1, 1);
+            ctx.arc(x + 8, y + 6, 5, (2 * Math.PI) - 1, 1);
+            ctx.arc(x + 8, y + 6, 7, (2 * Math.PI) - 1, 1);
+            ctx.stroke();
+        } else {
+            // draw the X
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 4);
+            ctx.lineTo(x + 14, y + 8);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 8);
+            ctx.lineTo(x + 14, y + 4);
+            ctx.stroke();
+        }
+    }
+    paint(canvas) {
+        this.paintBackground(canvas);
+        const x = this.x + 5;
+        const y = this.y + ((this.height / 2) - 6)
+        this.paintSoundIcon(canvas, x, y);
     }
 }
 
@@ -208,9 +258,12 @@ class PopoverSprite extends Sprite {
         var lineHeight = px * 1.2;
         var textHeight = lineHeight * this.textArr.length;
         var y = (canvas.height / 2) - (textHeight / 2);
-        ctx.font = Math.floor(px) + 'px Arial';
+        ctx.font = Math.floor(px * 2) + 'px Arial';
         ctx.textAlign = 'center';
-        for (var i = 0; i < this.textArr.length; i++) {
+        ctx.fillText(this.textArr[0], x, y);
+        y += lineHeight * 2;
+        ctx.font = Math.floor(px) + 'px Arial';
+        for (var i = 1; i < this.textArr.length; i++) {
             ctx.fillText(this.textArr[i], x, y);
             y += lineHeight;
         }
@@ -219,13 +272,17 @@ class PopoverSprite extends Sprite {
 
 class HelpSprite extends PopoverSprite {
     constructor(x, y, width, height) {
-        super(x, y, width, height, ['Help', ' ', 'Up/Down/Left/Right: Move Worm', 'Space: Pause/Resume'])
+        super(x, y, width, height, ['Help', ' ', 'Up/Down/Left/Right: Move Worm', 'Space: Pause/Resume', 'D: Enable/Disable Debug', 'S: Mute/Unmute']);
     }
 }
 
 class GameOverSprite extends PopoverSprite {
-    constructor(x, y, width, height) {
-        super(x, y, width, height, ['Game Over', ' ', 'Space: Pause/Resume'])
+    constructor(x, y, width, height, score = 0) {
+        super(x, y, width, height, ['Game Over', '', ' ', 'Space: Restart'])
+        this.score = score;
+    }
+    set score(score) {
+        this.textArr[1] = 'Score: ' + score;
     }
 }
 
@@ -388,13 +445,20 @@ class WormJS extends Animator {
         this.height = canvas.height;
         this.scale = scale;
 
-        this.background = new BackgroundSprite(canvas.width, canvas.height);
-        this.gameOverText = new GameOverSprite(10, 10, canvas.width - 20, canvas.height - 20);
-        this.helpText = new HelpSprite(10, 10, canvas.width - 20, canvas.height - 20);
+        this.board = {
+            width: canvas.width,
+            height: canvas.height - 20
+        }
+
+        this.background = new BackgroundSprite(this.board.width, this.board.height);
+        this.gameOverText = new GameOverSprite(10, 10, this.board.width - 20, this.board.height - 20);
+        this.helpText = new HelpSprite(10, 10, this.board.width - 20, this.board.height - 20);
         this.hudText = new HUDSprite(this, 5, 5);
+        this.settingsBar = new SettingsSprite(this, 0, this.board.height, this.board.width, this.height - this.board.height);
         this.gameState = WormJS.GameState.PAUSED;
         this.timer = new FPSTimer();
         this.debug = false;
+        this.mute = true;
 
         this.audioContext = new AudioContext();
 
@@ -454,6 +518,7 @@ class WormJS extends Animator {
             Logger.GlobalLogger.trace('Game Over, painting game over text');
             this.gameOverText.paint(this.canvas);
         }
+        this.settingsBar.paint(this.canvas);
     }
 
     frame(frameCount) {
@@ -484,8 +549,8 @@ class WormJS extends Animator {
             // detect a collision with the wall
             if (this.worm.x < 0 || 
                     this.worm.y < 0 || 
-                    this.worm.x >= this.width / this.scale || 
-                    this.worm.y >= this.height / this.scale) {
+                    this.worm.x >= this.board.width / this.scale || 
+                    this.worm.y >= this.board.height / this.scale) {
                 Logger.GlobalLogger.debug('Detected collision with wall');
                 this.gameOver();
             }
@@ -497,15 +562,16 @@ class WormJS extends Animator {
         Logger.GlobalLogger.info('Level Up!');
         this.apple = this.randomApple();
         this.score += 1;
-        this.fps += 1;
-        Logger.GlobalLogger.trace('New Score: ' + this.score);
-        Logger.GlobalLogger.trace('New FPS: ' + this.fps);
+        this.fps += .25;
+        Logger.GlobalLogger.debug('New Score: ' + this.score);
+        Logger.GlobalLogger.debug('New FPS: ' + this.fps);
         Logger.GlobalLogger.debug('New Apple: (' + this.apple.x + ', ' + this.apple.y + ')');
     }
 
     gameOver() {
         Logger.GlobalLogger.info("Game Over!");
         this.gameState = WormJS.GameState.GAMEOVER;
+        this.gameOverText.score = this.score;
     }
 
     reset() {
@@ -532,8 +598,8 @@ class WormJS extends Animator {
 
     randomApple() {
         Logger.GlobalLogger.trace('Creating a new random apple');
-        let x = Math.floor(Math.random() * (this.canvas.width / this.scale));
-        let y = Math.floor(Math.random() * (this.canvas.height / this.scale));
+        let x = Math.floor(Math.random() * (this.board.width / this.scale));
+        let y = Math.floor(Math.random() * (this.board.height / this.scale));
         Logger.GlobalLogger.trace('New apple position: (' + x + ', ' + y + ')')
         return new Apple(this.scale, x, y);
     }
@@ -555,6 +621,10 @@ class WormJS extends Animator {
             case 'd':
             case 'KeyD':
                 this.onDKey();
+                break;
+            case 's':
+            case 'KeyS':
+                this.onSKey();
                 break;
             case 'ArrowLeft':
                 this.onLeftKey();
@@ -613,6 +683,11 @@ class WormJS extends Animator {
     onDKey() {
         Logger.GlobalLogger.debug('Toggling debug status');
         this.debug = !this.debug;
+    }
+
+    onSKey() {
+        Logger.GlobalLogger.debug('Toggling mute status');
+        this.mute = !this.mute;
     }
 
 }
