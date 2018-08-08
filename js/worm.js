@@ -392,21 +392,7 @@ class GameSounds {
             }
         });
     }
-    /** Start playing background music. Will play until this.stopBgMusic() is called. */
-    playBgMusic() {
-        const self = this;
-        if (self.playingMusic) {
-            self.bgMusicSound.play();
-            // pause the sound after the pulse length
-            setTimeout(self.bgMusicSound.pause, self.bgMusicPulse);
-            // start the loop over after the pulse + break length
-            setTimeout(self.playBgMusic, self.bgMusicPulse + self.bgMusicBreak);
-        }
-    }
-    /** Stop background music */
-    stopBgMusic() {
-        this.playingMusic = false;
-    }
+    /** Call this when a game loop frame is rendered to play a short pulse sound */
     frame() {
         const sound = this.bgMusicSound;
         sound.play();
@@ -414,6 +400,7 @@ class GameSounds {
             sound.pause();
         }, this.bgMusicPulse);
     }
+    /** Call this when levelling up to play the level up sound */
     levelUp() {
         const sound = this.levelUpSound;
         sound.play();
@@ -421,6 +408,7 @@ class GameSounds {
             sound.pause();
         }, this.soundPulse);
     }
+    /** Call this when game over to play the game over sound */
     gameOver() {
         const sound = this.gameOverSound;
         sound.play();
