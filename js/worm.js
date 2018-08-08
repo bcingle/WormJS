@@ -376,6 +376,7 @@ class GameSounds {
                 frequency: Notes.A4
             }
         });
+        this.bgMusicSound.volume = 0.1;
         this.bgMusicPulse = 20;
         this.bgMusicBreak = 200;
         this.soundPulse = 100;
@@ -385,12 +386,14 @@ class GameSounds {
                 frequency: Notes.D5
             }
         });
+        this.levelUpSound.volume = 0.15;
         this.gameOverSound = new Pizzicato.Sound({
             source: 'wave',
             options: {
                 frequency: Notes.F3
             }
         });
+        this.gameOverSound.volume = 0.15;
     }
     /** Call this when a game loop frame is rendered to play a short pulse sound */
     frame() {
