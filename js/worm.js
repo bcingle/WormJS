@@ -315,13 +315,13 @@ MovingSprite.Direction = {
 }
 
 class Apple extends Sprite {
-    constructor(scale, x = 0, y = 0, color = '#ff0000') {
+    constructor(scale, x = 0, y = 0, color = '#ff6666') {
         super(x, y, 1, 1, color, scale);
     }
 }
 
 class WormPart extends Sprite {
-    constructor(scale, x = 0, y = 0, color = '#0000ff') {
+    constructor(scale, x = 0, y = 0, color = '#6666ff') {
         super(x, y, 1, 1, color, scale);
     }
 }
@@ -364,6 +364,72 @@ class Worm extends MovingSprite {
 }
 
 Worm.StartingWorm = new Worm([new WormPart(10, 10), new WormPart(11, 10), new WormPart(12, 10)], MovingSprite.Direction.RIGHT, 10, 10);
+
+/** A collection of sounds that can be played */
+class GameSounds {
+    constructor() {
+        this.playingMusic = false;
+        this.bgMusicSound = new Pizzicato.Sound({
+            source: 'wave',
+            options: {
+                type: 'square',
+                frequency: Notes.A4
+            }
+        });
+        this.bgMusicPulse = 20;
+        this.bgMusicBreak = 200;
+        this.soundPulse = 100;
+        this.levelUpSound = new Pizzicato.Sound({
+            source: 'wave',
+            options: {
+                frequency: Notes.D5
+            }
+        });
+        this.gameOverSound = new Pizzicato.Sound({
+            source: 'wave',
+            options: {
+                frequency: Notes.F3
+            }
+        });
+    }
+    /** Start playing background music. Will play until this.stopBgMusic() is called. */
+    playBgMusic() {
+        const self = this;
+        if (self.playingMusic) {
+            self.bgMusicSound.play();
+            // pause the sound after the pulse length
+            setTimeout(self.bgMusicSound.pause, self.bgMusicPulse);
+            // start the loop over after the pulse + break length
+            setTimeout(self.playBgMusic, self.bgMusicPulse + self.bgMusicBreak);
+        }
+    }
+    /** Stop background music */
+    stopBgMusic() {
+        this.playingMusic = false;
+    }
+    frame() {
+        const sound = this.bgMusicSound;
+        sound.play();
+        setTimeout(function () {
+            sound.pause();
+        }, this.bgMusicPulse);
+    }
+    levelUp() {
+        const sound = this.levelUpSound;
+        sound.play();
+        setTimeout(function () {
+            sound.pause();
+        }, this.soundPulse);
+    }
+    gameOver() {
+        const sound = this.gameOverSound;
+        sound.play();
+        setTimeout(function () {
+            sound.pause();
+        }, this.soundPulse);
+    }
+}
+
 
 /** 
  * An Animator is a superclass that controls game and render loops.  In this
@@ -460,7 +526,7 @@ class WormJS extends Animator {
         this.debug = false;
         this.mute = true;
 
-        this.audioContext = new AudioContext();
+        this.sounds = new GameSounds();
 
         this.reset();
     }
@@ -471,11 +537,6 @@ class WormJS extends Animator {
         this.timer.start();
         super.start();
         Logger.GlobalLogger.debug('WormJS Started');
-        var osc = this.audioContext.createOscillator();
-        osc.frequency.value = 440;
-        osc.type = 'square';
-        osc.connect(this.audioContext.destination);
-        //osc.start(0);
     }
 
     processKeys() {
@@ -526,6 +587,10 @@ class WormJS extends Animator {
         this.timer.frame();
         this.processKeys();
         if (this.gameState === WormJS.GameState.PLAYING) {
+            if (!this.mute && this.frameCount % 4 == 0) {
+                this.sounds.frame();
+            }
+
             Logger.GlobalLogger.trace('Playing game: Calling movement frames');
             this.apple.frame();
             this.worm.frame();
@@ -559,16 +624,22 @@ class WormJS extends Animator {
     }
 
     levelUp() {
+        if (!this.mute) {
+            this.sounds.levelUp();
+        }
         Logger.GlobalLogger.info('Level Up!');
         this.apple = this.randomApple();
         this.score += 1;
-        this.fps += .25;
+        this.fps += .5;
         Logger.GlobalLogger.debug('New Score: ' + this.score);
         Logger.GlobalLogger.debug('New FPS: ' + this.fps);
         Logger.GlobalLogger.debug('New Apple: (' + this.apple.x + ', ' + this.apple.y + ')');
     }
 
     gameOver() {
+        if (!this.mute) {
+            this.sounds.gameOver();
+        }
         Logger.GlobalLogger.info("Game Over!");
         this.gameState = WormJS.GameState.GAMEOVER;
         this.gameOverText.score = this.score;
