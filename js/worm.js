@@ -2,6 +2,8 @@
  * An implementation of a Logger.  Writes messages to console
  * if the logging level is set at least as high as the type
  * of message being logged.
+ * 
+ * Copyright 2018 Ben Ingle
 */
 class Logger {
     /**
@@ -516,6 +518,7 @@ class WormJS extends Animator {
         this.timer = new FPSTimer();
         this.debug = false;
         this.mute = true;
+        this.highScore = localStorage.getItem('highScore');
 
         this.sounds = new GameSounds();
 
@@ -622,6 +625,10 @@ class WormJS extends Animator {
         this.apple = this.randomApple();
         this.score += 1;
         this.fps += .5;
+        let highScore = localStorage.getItem('highScore');
+        if (this.score > highScore) {
+            localStorage.setItem('highScore', this.score);
+        }
         Logger.GlobalLogger.debug('New Score: ' + this.score);
         Logger.GlobalLogger.debug('New FPS: ' + this.fps);
         Logger.GlobalLogger.debug('New Apple: (' + this.apple.x + ', ' + this.apple.y + ')');

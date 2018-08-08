@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Worm JS</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/jquery-3.3.1.js"></script>
         <script src="js/sounds.js"></script>
@@ -9,7 +10,14 @@
         <script src="js/Pizzicato-0.6.1.js"></script>
     </head>
     <body>
+        <div class="container">
+        <div>
+            <h3>WormJS</h3>
+            <p>by Ben Ingle</p>
+            <p>View source on <a href="https://github.com/bcingle/WormJS" title="bcingle/WormJS"><img src="https://assets-cdn.github.com/images/modules/logos_page/GitHub-Logo.png" height="15em"/></a></p>
+        </div>
         <canvas id="worm-canvas" width="400" height="300"></canvas>
+        </div>
         <script>
             (function($, WormJS, canvas) {
                 Logger.GlobalLogger.level = Logger.LogLevel.DEBUG;
@@ -23,5 +31,6 @@
                 });
             })($, WormJS, $('#worm-canvas')[0]);
         </script>
+        
     </body>
 </html>
